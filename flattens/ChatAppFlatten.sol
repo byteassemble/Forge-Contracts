@@ -488,19 +488,20 @@ contract ChatApp {
     }
     mapping(uint256=>Room) public rooms;
 
-    event CreateRoom(address _owner, uint256 _roomId);
-    event AddMember(address _member, uint256 _roomId);
+    event CreateRoom(uint256 _roomId, address _owner, address[] _members);
+    event AddMember(uint256 _roomId, address _member);
 
     constructor () {}
 
     function createRoom(address[] memory members) external returns(uint256) {
+        require(!checkItem(msg.sender, members), "Invalid members");
         currentRoomId = currentRoomId.add(1);
         Room memory room;
         room.roomId = currentRoomId;
         room.owner = msg.sender;
         room.members = members;
         rooms[currentRoomId] = room;
-        emit CreateRoom(msg.sender, currentRoomId);
+        emit CreateRoom(currentRoomId, msg.sender, members);
         return currentRoomId;
     }
 
@@ -508,9 +509,10 @@ contract ChatApp {
         require(roomId <= currentRoomId, "Invalid Room Id");
         Room storage room = rooms[roomId];
         require(room.owner == msg.sender, "Room owner can add a member only.");
+        require(msg.sender != member, "Invalid member.");
         require(!existMember(roomId, member), "The member exists already");
         room.members.push(member);
-        emit AddMember(member, roomId);
+        emit AddMember(roomId, member);
     }
 
     function existMember(uint256 roomId, address newMember) public view returns(bool) {
@@ -519,6 +521,17 @@ contract ChatApp {
         bool isExist = false;
         for (uint256 i = 0; i < members.length; i++) {
             if (members[i] == newMember) {
+                isExist = true;
+                break;
+            }
+        }
+        return isExist;
+    }
+
+    function checkItem(address _member, address[] memory _members) public pure returns(bool) {
+        bool isExist = false;
+        for (uint256 i = 0; i < _members.length; i++) {
+            if (_members[i] == _member) {
                 isExist = true;
                 break;
             }
