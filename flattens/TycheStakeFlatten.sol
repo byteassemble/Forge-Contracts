@@ -1737,6 +1737,7 @@ contract TycheStakeTemple is ERC721Holder, Ownable, ReentrancyGuard {
             // Increment the amount which will be staked
             emit Unstaked(msg.sender, address(stakedToken), tokenIds[i]);
         }
+        user.rewardDebt = user.amount.mul(accTokenPerShare).div(PRECISION_FACTOR);
     }
 
     function withdrawOne(uint256 _tokenId) external nonReentrant {
@@ -1757,6 +1758,7 @@ contract TycheStakeTemple is ERC721Holder, Ownable, ReentrancyGuard {
         
         delete tokenOwner[_tokenId];
         stakedToken.safeTransferFrom(address(this), msg.sender, _tokenId);
+        user.rewardDebt = user.amount.mul(accTokenPerShare).div(PRECISION_FACTOR);
         emit Unstaked(msg.sender, address(stakedToken), _tokenId);
     }
 
