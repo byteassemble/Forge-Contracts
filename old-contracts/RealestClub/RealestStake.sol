@@ -1,0 +1,65 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+import "./RealestStakeTemple.sol";
+
+contract RealestStake is Ownable {
+    event NewStakeContract(
+        address indexed smartChef, 
+        address stakeToken, 
+        address rewardToken, 
+        uint256 rewardPerBlock, 
+        uint256 startBlock, 
+        uint256 endBlock,
+        uint256 poolLimitPerUser,
+        address stakeOwner
+    );
+
+    /**
+     * @notice Initialize the contract
+     * @param _stakedToken: staked token address
+     * @param _rewardToken: reward token address
+     * @param _rewardPerBlock: reward per block (in rewardToken)
+     * @param _startBlock: start block
+     * @param _endBlock: end block
+     * @param _poolLimitPerUser: pool limit per user in stakedToken (if any, else 0)
+     */
+    function deployPool(
+        IERC721 _stakedToken,
+        address _rewardToken,
+        uint256 _rewardPerBlock,
+        uint256 _startBlock,
+        uint256 _endBlock,
+        uint256 _poolLimitPerUser
+    ) external onlyOwner {
+        require(IRewardToken(_rewardToken).totalSupply() >= 0);
+
+        bytes memory bytecode = type(RealestStakeTemple).creationCode;
+        bytes32 salt = keccak256(
+            abi.encodePacked(_stakedToken, _rewardToken, _startBlock)
+        );
+        address smartChefAddress;
+
+        assembly {
+            smartChefAddress := create2(
+                0,
+                add(bytecode, 32),
+                mload(bytecode),
+                salt
+            )
+        }
+
+        RealestStakeTemple(smartChefAddress).initialize(
+            _stakedToken,
+            _rewardToken,
+            _rewardPerBlock,
+            _startBlock,
+            _endBlock,
+            _poolLimitPerUser,
+            msg.sender
+        );
+
+        emit NewStakeContract(smartChefAddress, address(_stakedToken), _rewardToken, _rewardPerBlock, _startBlock, _endBlock, _poolLimitPerUser, msg.sender);
+    }
+}
